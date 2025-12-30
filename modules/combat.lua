@@ -1,23 +1,31 @@
 local Combat = {}
-local RS = game:GetService("ReplicatedStorage")
-local GunShot = RS:FindFirstChild("GunShot", true)
-local QW = RS:FindFirstChild("qw", true)
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
-function Combat.Fire(target)
-    if target and GunShot then
-        local headPos = target.Character.Head.Position
-        local origin = game.Players.LocalPlayer.Character.Head.Position
-        local dir = (headPos - origin).Unit
-        pcall(function()
-            GunShot:FireServer(headPos, target.Character.Head, dir, (headPos - origin).Magnitude)
-        end)
+function Combat.GetClosest(fov, wallCheck)
+    local target, closest = nil, fov
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
+            -- Проверка на команду и щит (из Obsidian)
+            if p.Team ~= LP.Team then
+                local pos, onscreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                if onscreen then
+                    local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if dist < closest then
+                        -- Wall Check (Raycast)
+                        if wallCheck then
+                            local ray = workspace:Raycast(Camera.CFrame.Position, (p.Character.Head.Position - Camera.CFrame.Position).Unit * 500, RaycastParams.new())
+                            if ray and not ray.Instance:IsDescendantOf(p.Character) then continue end
+                        end
+                        closest = dist
+                        target = p
+                    end
+                end
+            end
+        end
     end
-end
-
-function Combat.AuraHit(target)
-    if target and QW then
-        pcall(function() QW:FireServer(target.Character.Head) end)
-    end
+    return target
 end
 
 return Combat

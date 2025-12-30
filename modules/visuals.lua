@@ -1,18 +1,32 @@
 local Visuals = {}
+local RunService = game:GetService("RunService")
 local LP = game.Players.LocalPlayer
 
-function Visuals.ApplyESP(player, state)
-    local function Create(char)
-        if not char then return end
-        task.wait(0.5)
-        local h = char:FindFirstChild("EliteHighlight") or Instance.new("Highlight")
-        h.Name = "EliteHighlight"
-        h.Parent = char
-        h.FillColor = (player.Team == LP.Team) and Color3.new(0,1,0) or Color3.new(1,0,0)
-        h.Enabled = state
+function Visuals.InitESP(enabled)
+    if not enabled then 
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("Highlight") then
+                p.Character.Highlight:Destroy()
+            end
+        end
+        return 
     end
-    player.CharacterAdded:Connect(Create)
-    if player.Character then Create(player.Character) end
+
+    RunService.RenderStepped:Connect(function()
+        if not enabled then return end
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local char = p.Character
+                -- Проверка на команду
+                if p.Team ~= LP.Team then
+                    local high = char:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", char)
+                    high.FillColor = Color3.fromRGB(255, 0, 50)
+                    high.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    high.FillTransparency = 0.6
+                end
+            end
+        end
+    end)
 end
 
 return Visuals
