@@ -1,73 +1,140 @@
--- [[ FLICK ELITE CORE ]] --
+-- [[ FLICK ELITE | FULL CORE INITIALIZER ]] --
+
 local Config = {
     Owner = "Lo03eR",
     Repo = "new_hub",
     Branch = "main",
-    Key = "ROBKEY" -- Твой ключ
+    Key = "ROBKEY" -- Твой секретный ключ
 }
 
+-- Функция для подгрузки модулей с твоего GitHub
 local function GetRaw(path)
     local url = string.format("https://raw.githubusercontent.com/%s/%s/%s/%s", Config.Owner, Config.Repo, Config.Branch, path)
-    return loadstring(game:HttpGet(url))()
+    local success, result = pcall(function()
+        return game:HttpGet(url)
+    end)
+    if success then
+        local fn, err = loadstring(result)
+        if fn then return fn() end
+        warn("Error loading module: " .. path .. " | " .. tostring(err))
+    end
+    return nil
 end
 
--- 1. СИСТЕМА КЛЮЧЕЙ (Стиль ROBScript)
-local function LoadKeySystem()
-    local Players = game:GetService("Players")
-    local TweenService = game:GetService("TweenService")
+-- [[ СИСТЕМА ЗАГРУЗКИ (STYLE UNX) ]] --
+local function StartLoading()
     local gui = (gethui and gethui()) or game:GetService("CoreGui")
+    local Screen = Instance.new("ScreenGui", gui)
+    Screen.Name = "EliteLoader"
+
+    local BarBG = Instance.new("Frame", Screen)
+    BarBG.Size = UDim2.new(0, 300, 0, 6)
+    BarBG.Position = UDim2.new(0.5, -150, 0.5, 0)
+    BarBG.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    BarBG.BorderSizePixel = 0
+    Instance.new("UICorner", BarBG)
+
+    local Fill = Instance.new("Frame", BarBG)
+    Fill.Size = UDim2.new(0, 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(169, 112, 255)
+    Instance.new("UICorner", Fill)
+
+    local Status = Instance.new("TextLabel", Screen)
+    Status.Position = UDim2.new(0.5, -150, 0.5, -30)
+    Status.Size = UDim2.new(0, 300, 0, 20)
+    Status.BackgroundTransparency = 1
+    Status.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Status.Font = Enum.Font.GothamMedium
+    Status.TextSize = 14
+    Status.Text = "Starting..."
+
+    local stages = {
+        {msg = "Checking Compatibility...", time = 0.8},
+        {msg = "Fetching Combat Modules...", time = 1.2},
+        {msg = "Injecting Visuals...", time = 1.0},
+        {msg = "Finalizing Interface...", time = 0.5}
+    }
+
+    for i, stage in ipairs(stages) do
+        Status.Text = stage.msg
+        game:GetService("TweenService"):Create(Fill, TweenInfo.new(stage.time), {Size = UDim2.new(i/#stages, 0, 1, 0)}):Play()
+        task.wait(stage.time)
+    end
+
+    Screen:Destroy()
+    
+    -- Запуск основного меню (Obsidian Library)
+    local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+    local Window = Library:CreateWindow({ Title = "FLICK ELITE V1", Footer = "User: " .. game.Players.LocalPlayer.Name })
+    
+    local MainTab = Window:AddTab("Main", "crosshair")
+    local VisualsTab = Window:AddTab("Visuals", "eye")
+
+    -- Подключаем твои модули
+    local CombatModule = GetRaw("modules/combat.lua")
+    
+    MainTab:AddToggle("SilentAim", { Text = "Silent Aim", Default = false, Callback = function(v) _G.Silent = v end })
+    MainTab:AddSlider("FOV", { Text = "FOV Radius", Default = 150, Min = 50, Max = 500, Callback = function(v) _G.FOV = v end })
+end
+
+-- [[ СИСТЕМА КЛЮЧЕЙ (STYLE ROBSCRIPT) ]] --
+local function LoadKeySystem()
+    local gui = (gethui and gethui()) or game:GetService("CoreGui")
+    if gui:FindFirstChild("EliteKeySystem") then gui.EliteKeySystem:Destroy() end
 
     local ScreenGui = Instance.new("ScreenGui", gui)
     ScreenGui.Name = "EliteKeySystem"
+    ScreenGui.IgnoreGuiInset = true
 
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 350, 0, 180)
-    Main.Position = UDim2.new(0.5, -175, 0.5, -90)
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+    Main.Size = UDim2.new(0, 350, 0, 200)
+    Main.Position = UDim2.new(0.5, -175, 0.5, -100)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Main.BorderSizePixel = 0
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+    local Stroke = Instance.new("UIStroke", Main)
+    Stroke.Color = Color3.fromRGB(255, 255, 255)
+    Stroke.Thickness = 1.5
 
     local Title = Instance.new("TextLabel", Main)
-    Title.Size = UDim2.new(1, 0, 0, 40)
-    Title.Text = "FLICK ELITE ACCESS"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 18
+    Title.Size = UDim2.new(1, 0, 0, 50)
     Title.BackgroundTransparency = 1
+    Title.Text = "FLICK ELITE ACCESS"
+    Title.TextColor3 = Color3.white
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 20
 
     local KeyBox = Instance.new("TextBox", Main)
-    KeyBox.Size = UDim2.new(0.9, 0, 0, 35)
-    KeyBox.Position = UDim2.new(0.05, 0, 0.4, 0)
+    KeyBox.Size = UDim2.new(0, 280, 0, 40)
+    KeyBox.Position = UDim2.new(0.5, -140, 0.45, 0)
     KeyBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    KeyBox.PlaceholderText = "Enter License Key..."
+    KeyBox.PlaceholderText = "Enter Key..."
     KeyBox.Text = ""
     KeyBox.TextColor3 = Color3.white
     Instance.new("UICorner", KeyBox)
 
     local Btn = Instance.new("TextButton", Main)
-    Btn.Size = UDim2.new(0.9, 0, 0, 40)
-    Btn.Position = UDim2.new(0.05, 0, 0.7, 0)
-    Btn.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
+    Btn.Size = UDim2.new(0, 280, 0, 45)
+    Btn.Position = UDim2.new(0.5, -140, 0.72, 0)
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
     Btn.Text = "LOGIN"
     Btn.TextColor3 = Color3.white
     Btn.Font = Enum.Font.GothamBold
+    Btn.TextSize = 16
     Instance.new("UICorner", Btn)
-
-    -- Эффект тряски при ошибке
-    local function Shake()
-        local orig = Main.Position
-        for i = 1, 6 do
-            Main.Position = orig + UDim2.new(0, i%2==0 and 5 or -5, 0, 0)
-            task.wait(0.02)
-        end
-        Main.Position = orig
-    end
 
     Btn.MouseButton1Click:Connect(function()
         if KeyBox.Text == Config.Key then
             ScreenGui:Destroy()
-            StartLoading() -- Переход к загрузке
+            StartLoading()
         else
-            Shake()
+            -- Эффект тряски
+            local orig = Main.Position
+            for i = 1, 6 do
+                Main.Position = orig + UDim2.new(0, i%2==0 and 5 or -5, 0, 0)
+                task.wait(0.02)
+            end
+            Main.Position = orig
             Btn.Text = "WRONG KEY!"
             task.wait(1)
             Btn.Text = "LOGIN"
@@ -75,63 +142,5 @@ local function LoadKeySystem()
     end)
 end
 
--- 2. АНИМАЦИЯ ЗАГРУЗКИ (Стиль UNXHub)
-function StartLoading()
-    local Screen = Instance.new("ScreenGui", (gethui and gethui()) or game:GetService("CoreGui"))
-    local BarBG = Instance.new("Frame", Screen)
-    BarBG.Size = UDim2.new(0, 300, 0, 4)
-    BarBG.Position = UDim2.new(0.5, -150, 0.5, 0)
-    BarBG.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    
-    local Fill = Instance.new("Frame", BarBG)
-    Fill.Size = UDim2.new(0, 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(169, 112, 255) -- Фиолетовый как у UNX
-
-    local Status = Instance.new("TextLabel", Screen)
-    Status.Position = UDim2.new(0.5, -150, 0.5, -25)
-    Status.Size = UDim2.new(0, 300, 0, 20)
-    Status.BackgroundTransparency = 1
-    Status.TextColor3 = Color3.white
-    Status.Font = Enum.Font.Code
-    Status.Text = "Initializing Engine..."
-
-    local stages = {"Bypassing Anti-Cheat...", "Loading Obsidian Modules...", "Finalizing UI...", "Welcome, " .. game.Players.LocalPlayer.Name}
-    
-    for i, msg in ipairs(stages) do
-        Status.Text = msg
-        game:GetService("TweenService"):Create(Fill, TweenInfo.new(0.8), {Size = UDim2.new(i/#stages, 0, 1, 0)}):Play()
-        task.wait(1)
-    end
-    
-    Screen:Destroy()
-    MainHub() -- Запуск основного чита
-end
-
--- 3. ОСНОВНОЙ ХАБ (Движок Obsidian)
-function MainHub()
-    -- Сюда мы подключаем библиотеку Obsidian, которую ты нашел
-    local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-    local Window = Library:CreateWindow({ Title = "FLICK ELITE | PRIVATE", Footer = "Build: 2025" })
-    
-    local Main = Window:AddTab("Main", "user")
-    
-    -- Подключаем наши модули с GitHub
-    local Combat = GetRaw("modules/combat.lua")
-    
-    Main:AddToggle("SilentAim", { Text = "Silent Aim (Bypass)", Default = false, Callback = function(v)
-        _G.Silent = v
-    end})
-    
-    -- Главный цикл работы аима
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if _G.Silent and Combat then
-            local target = Combat.GetClosest(150, true) -- 150 FOV + Wallcheck
-            if target then
-                -- Логика выстрела (мы ее допишем в модуле)
-            end
-        end
-    end)
-end
-
--- СТАРТ
+-- СТАРТ ПРИЛОЖЕНИЯ
 LoadKeySystem()
